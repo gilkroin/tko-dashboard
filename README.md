@@ -17,6 +17,10 @@ Finnhub REST API ──► ingest/ (Python) ──► Snowflake TKO_DB
                      while it is open
 ```
 
+**Full build guide and runbook:** [docs/BUILD_GUIDE.md](docs/BUILD_GUIDE.md)
+
+Live outputs: customer site https://gilkroin.github.io/tko-dashboard/ · Claude dashboard (private) https://claude.ai/artifact/9EQRU4W5hXLbPMbSk6619M
+
 ## Repository layout
 
 | Path | What it is |
