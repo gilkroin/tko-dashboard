@@ -1,8 +1,11 @@
-# Runs the ingestion job: Finnhub API -> Snowflake RAW tables.
+# Every 5 minutes during US market hours:
+#   1. Ingest  : Finnhub API -> Snowflake RAW tables
+#   2. Export  : Snowflake MART views -> snapshot/*.json
+#   3. Publish : force-push snapshot/ to the `data` branch (always 1 commit)
 #
-# Schedule: every 5 minutes, Monday-Friday, 13:00-21:59 UTC.
-#   US market hours are 09:30-16:00 New York time = 14:30-21:00 UTC in winter
-#   (13:30-20:00 UTC in summer). The window covers both, so no edits at DST changes.
+# Schedule: Monday-Friday, 13:00-21:59 UTC. US market hours are 09:30-16:00
+#   New York time = 14:30-21:00 UTC in winter (13:30-20:00 UTC in summer);
+#   the window covers both, so no edits at DST changes.
 # GitHub may start scheduled runs a few minutes late when its servers are busy.
 #
 # Secrets (repo -> Settings -> Secrets and variables -> Actions -> Secrets):
@@ -22,12 +25,21 @@ concurrency:
   cancel-in-progress: false
 
 permissions:
-  contents: read           # this job only reads the repo
+  contents: write          # needed to push the snapshot to the `data` branch
 
 jobs:
   load:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 6
+    env:
+      FINNHUB_API_KEY:       ${{ secrets.FINNHUB_API_KEY }}
+      SNOWFLAKE_ACCOUNT:     ${{ secrets.SNOWFLAKE_ACCOUNT }}
+      SNOWFLAKE_PRIVATE_KEY: ${{ secrets.SNOWFLAKE_PRIVATE_KEY }}
+      SNOWFLAKE_USER:        TKO_INGEST_SVC
+      SNOWFLAKE_ROLE:        TKO_INGESTER
+      SNOWFLAKE_WAREHOUSE:   TKO_WH
+      SNOWFLAKE_DATABASE:    TKO_DB
+      TICKERS: ${{ vars.TICKERS || 'AAPL,MSFT,NVDA,GOOGL,AMZN,META,TSLA' }}
     steps:
       - uses: actions/checkout@v5
 
@@ -40,12 +52,18 @@ jobs:
 
       - name: Ingest
         run: python -m ingest.run_ingest
+
+      - name: Export snapshot
+        run: python -m publish.export_snapshot --out snapshot
+
+      - name: Publish snapshot to `data` branch
         env:
-          FINNHUB_API_KEY:       ${{ secrets.FINNHUB_API_KEY }}
-          SNOWFLAKE_ACCOUNT:     ${{ secrets.SNOWFLAKE_ACCOUNT }}
-          SNOWFLAKE_PRIVATE_KEY: ${{ secrets.SNOWFLAKE_PRIVATE_KEY }}
-          SNOWFLAKE_USER:        TKO_INGEST_SVC
-          SNOWFLAKE_ROLE:        TKO_INGESTER
-          SNOWFLAKE_WAREHOUSE:   TKO_WH
-          SNOWFLAKE_DATABASE:    TKO_DB
-          TICKERS: ${{ vars.TICKERS || 'AAPL,MSFT,NVDA,GOOGL,AMZN,META,TSLA' }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}   # short-lived token GitHub creates per run
+        run: |
+          cd snapshot
+          git init -q -b data
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .
+          git commit -q -m "Snapshot $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          git push -q -f "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" data

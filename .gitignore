@@ -17,3 +17,4 @@ Thumbs.db
 
 # ---- Build output (published by GitHub Actions, not committed) ----
 site/dist/
+snapshot/
