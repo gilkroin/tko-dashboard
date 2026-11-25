@@ -1,0 +1,19 @@
+# ---- Secrets: NEVER commit these ----
+.env
+keys/
+*.p8
+*.pem
+
+# ---- Python ----
+.venv/
+__pycache__/
+*.pyc
+
+# ---- Editors / OS ----
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store
+
+# ---- Build output (published by GitHub Actions, not committed) ----
+site/dist/

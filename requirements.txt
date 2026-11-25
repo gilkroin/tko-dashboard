@@ -1,0 +1,4 @@
+requests>=2.32
+python-dotenv>=1.0
+snowflake-connector-python>=3.12
+cryptography>=43.0

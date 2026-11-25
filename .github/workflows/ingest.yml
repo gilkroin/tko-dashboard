@@ -1,0 +1,51 @@
+# Runs the ingestion job: Finnhub API -> Snowflake RAW tables.
+#
+# Schedule: every 5 minutes, Monday-Friday, 13:00-21:59 UTC.
+#   US market hours are 09:30-16:00 New York time = 14:30-21:00 UTC in winter
+#   (13:30-20:00 UTC in summer). The window covers both, so no edits at DST changes.
+# GitHub may start scheduled runs a few minutes late when its servers are busy.
+#
+# Secrets (repo -> Settings -> Secrets and variables -> Actions -> Secrets):
+#   FINNHUB_API_KEY, SNOWFLAKE_ACCOUNT, SNOWFLAKE_PRIVATE_KEY
+# Variables (same page -> Variables tab, optional):
+#   TICKERS  e.g. AAPL,MSFT,NVDA,GOOGL,AMZN,META,TSLA
+
+name: ingest
+
+on:
+  schedule:
+    - cron: "*/5 13-21 * * 1-5"
+  workflow_dispatch: {}   # adds a "Run workflow" button for manual tests
+
+concurrency:
+  group: ingest            # never run two loads at the same time
+  cancel-in-progress: false
+
+permissions:
+  contents: read           # this job only reads the repo
+
+jobs:
+  load:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - run: pip install -r requirements.txt
+
+      - name: Ingest
+        run: python -m ingest.run_ingest
+        env:
+          FINNHUB_API_KEY:       ${{ secrets.FINNHUB_API_KEY }}
+          SNOWFLAKE_ACCOUNT:     ${{ secrets.SNOWFLAKE_ACCOUNT }}
+          SNOWFLAKE_PRIVATE_KEY: ${{ secrets.SNOWFLAKE_PRIVATE_KEY }}
+          SNOWFLAKE_USER:        TKO_INGEST_SVC
+          SNOWFLAKE_ROLE:        TKO_INGESTER
+          SNOWFLAKE_WAREHOUSE:   TKO_WH
+          SNOWFLAKE_DATABASE:    TKO_DB
+          TICKERS: ${{ vars.TICKERS || 'AAPL,MSFT,NVDA,GOOGL,AMZN,META,TSLA' }}
