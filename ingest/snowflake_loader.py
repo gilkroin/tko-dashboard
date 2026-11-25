@@ -41,6 +41,9 @@ def connect(s: Settings):
         database=s.sf_database,
         schema="RAW",
         session_parameters={"QUERY_TAG": "tko_ingest"},
+        # Short batch job, no async queries: always log out cleanly on close.
+        # Setting it explicitly also silences the connector's FutureWarning.
+        enable_server_session_keep_alive_auto_detection=False,
     )
     try:
         yield conn

@@ -33,6 +33,12 @@ class FinnhubClient:
             if resp.status_code == 429:  # rate limited: back off and retry
                 time.sleep(2 ** attempt * 5)
                 continue
+            if resp.status_code in (401, 403):
+                raise SystemExit(
+                    f"Finnhub refused the API key (HTTP {resp.status_code}: {resp.text.strip()[:120]}). "
+                    "Check FINNHUB_API_KEY in .env (local) or the GitHub secret: no quotes, no spaces, "
+                    "the key shown at https://finnhub.io/dashboard."
+                )
             resp.raise_for_status()
             return resp.json()
         resp.raise_for_status()
