@@ -28,7 +28,28 @@ Finnhub REST API ──► ingest/ (Python) ──► Snowflake TKO_DB
 | `ingest/finnhub_client.py` | Finnhub API calls: `/quote`, `/company-news`, `/stock/profile2` |
 | `ingest/snowflake_loader.py` | Writes to RAW: appends quotes, MERGEs news (no duplicates), daily profiles |
 | `ingest/run_ingest.py` | Entry point: `--dry-run`, `--check-snowflake`, or a full run |
-| `.github/workflows/ingest.yml` | The 5-minute schedule |
+| `.github/workflows/ingest.yml` | The 5-minute schedule: ingest, export snapshot, push it to the `data` branch |
+| `snowflake/03_snapshot_export_grants.sql` | Lets the ingestion role read MART views for the export |
+| `publish/export_snapshot.py` | MART views → `snapshot/*.json` + `manifest.json` |
+| `claude-dashboard/index.html` | Page code of the Claude dashboard (copy kept under version control) |
+| `site/shell.html` | Web wrapper: design tokens, d3, and a `dash` adapter that loads `data/*.json` once |
+| `publish/build_site.py` | Builds the customer website from the dashboard page and a snapshot |
+| `.github/workflows/publish-site.yml` | Publishes the customer website to GitHub Pages (weekdays 22:10 UTC + manual) |
+
+## Why a snapshot instead of live Snowflake queries from Claude
+
+Snowflake trial accounts can't use the Snowflake-managed MCP server that Claude's connector talks to.
+So the 5-minute job also exports the MART views as JSON to the `data` branch. A Claude scheduled
+task uploads them to the Claude dashboard hourly, and the customer website is built from the same files.
+On a paid Snowflake account the Claude dashboard could query `TKO_DB.MART` live instead.
+
+## Preview the customer website locally
+
+```powershell
+python -m publish.export_snapshot --out snapshot
+python publish/build_site.py --data snapshot --out site/dist
+python -m http.server 8000 -d site/dist     # then open http://localhost:8000
+```
 
 ## Who can access what
 

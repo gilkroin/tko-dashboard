@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TKO Tech Markets — snapshot {{SNAPSHOT_LABEL}}</title>
+<meta name="description" content="Static snapshot of tech-company stock prices and company news.">
+<style>
+  /* Design tokens: the same names the Claude dashboard provides, defined here so the shared page code looks right. */
+  :root {
+    --color-fg: #1b1b1a; --color-fg-muted: #5e5d59; --color-bg: #ffffff; --color-panel: #f8f7f4;
+    --color-border-line: #e4e2dc; --color-ok: #1f7a3d; --color-bad: #b3261e; --color-warn: #a35c00;
+    --font-anthropic-sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --font-anthropic-serif: Georgia, "Times New Roman", serif;
+    --cds-font-size-caption: 12px; --cds-font-size-body: 15px; --cds-font-size-heading: 18px; --cds-font-size-title: 32px;
+    --cds-font-weight-medium: 600;
+    --cds-gap-xs: 4px; --cds-gap-sm: 8px; --cds-gap-md: 12px; --cds-gap-lg: 20px; --cds-gap-xl: 32px;
+    --cds-pad-xs: 4px; --cds-pad-sm: 8px; --cds-pad-md: 12px; --cds-pad-lg: 20px; --cds-pad-xl: 32px;
+    --cds-radius: 8px;
+    --cds-chart-grid: #eceae4; --cds-chart-axis: #c8c5bc; --cds-chart-reference: #9b978c;
+    --cds-text-secondary: #5e5d59;
+    --cds-surface-popover: #ffffff; --cds-border: #dcd9d1; --cds-shadow-popover: 0 6px 20px rgba(0,0,0,.12);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --color-fg: #ecebe6; --color-fg-muted: #a8a69e; --color-bg: #1c1c1b; --color-panel: #252523;
+      --color-border-line: #3a3936; --color-ok: #5cc27e; --color-bad: #f28b82;
+      --cds-chart-grid: #33322f; --cds-chart-axis: #4d4b46; --cds-chart-reference: #7d7a72;
+      --cds-text-secondary: #a8a69e; --cds-surface-popover: #2c2c2a; --cds-border: #45433f;
+    }
+  }
+  body { margin: 0; background: var(--color-bg); color: var(--color-fg); font-family: var(--font-anthropic-sans); font-size: var(--cds-font-size-body); line-height: 1.45; }
+  #dash-root { max-width: 1200px; margin: 0 auto; padding: 24px 20px 48px; }
+  .dash-skeleton { color: transparent !important; background: var(--color-border-line); border-radius: 4px; min-height: 1em; }
+  .dash-select { padding: 4px 28px 4px 8px; border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); background-color: var(--color-bg); color: var(--color-fg); font: inherit; font-size: var(--cds-font-size-caption); }
+  .site-foot { max-width: 1200px; margin: 0 auto; padding: 0 20px 32px; color: var(--color-fg-muted); font-size: 12px; }
+  .site-foot a { color: inherit; }
+</style>
+<!-- d3 v7: the charting library the shared page code uses -->
+<script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
+<script>
+/* -------------------------------------------------------------------------
+   dash adapter: a tiny stand-in for the Claude dashboard runtime.
+   It loads data/*.json ONCE when the page opens (no timers, no refresh),
+   then runs every registered drawing. Resizing the window redraws.
+   ------------------------------------------------------------------------- */
+(function () {
+  const SOURCES = ['latest_quotes', 'price_history', 'news_feed', 'news_volume', 'pipeline_freshness'];
+  const store = {};
+  SOURCES.forEach((id) => { store[id] = { status: 'loading', data: [] }; });
+  const calcs = {};
+  const draws = [];
+  const onDatas = [];
+
+  function data(id) {
+    if (store[id]) return store[id];
+    const c = calcs[id];
+    if (!c) return { status: 'missing', data: [] };
+    const ins = c.inputs.map(data);
+    if (ins.some((x) => x.status === 'loading')) return { status: 'loading', data: null };
+    if (ins.some((x) => x.status !== 'ok')) return { status: 'error', data: null };
+    return { status: 'ok', data: c.fn(...ins.map((x) => x.data)) };
+  }
+  function run(name, fn) {
+    document.querySelectorAll('[data-draw="' + name + '"]').forEach((el) => {
+      try { fn(el); } catch (e) { console.error('drawing ' + name + ' failed', e); }
+    });
+  }
+  function drawAll() {
+    onDatas.forEach((f) => f());
+    draws.forEach(([n, f]) => run(n, f));
+  }
+
+  window.dash = {
+    data,
+    calc: (id, spec) => { calcs[id] = spec; },
+    draw: (name, fn) => { if (fn) draws.push([name, fn]); else draws.filter((d) => d[0] === name).forEach(([n, f]) => run(n, f)); },
+    onData: (fn) => { onDatas.push(fn); },
+    colors: ['#3b6fd4', '#d9822b', '#1f9d8a', '#b5487d', '#7a5cd6', '#6b8e23', '#c0392b', '#4a90a4'],
+    params: () => ({}), setParams() {}, resetParams() {}, setLink() {}, refresh() {},
+  };
+
+  window.addEventListener('DOMContentLoaded', () => {
+    drawAll(); // shows loading placeholders
+    Promise.all(SOURCES.map((id) =>
+      fetch('data/' + id + '.json')
+        .then((r) => { if (!r.ok) throw new Error(r.status); return r.json(); })
+        .then((d) => { store[id] = { status: 'ok', data: d }; })
+        .catch(() => { store[id] = { status: 'error', data: [] }; })
+    )).then(drawAll);
+    let t;
+    window.addEventListener('resize', () => { clearTimeout(t); t = setTimeout(drawAll, 150); });
+  });
+})();
+</script>
+</head>
+<body>
+<div id="dash-root">
+{{DASHBOARD}}
+</div>
+<footer class="site-foot">
+  Snapshot published {{SNAPSHOT_LABEL}}. Market data: Finnhub. Stored in Snowflake, published from
+  <a href="https://github.com/gilkroin/tko-dashboard">github.com/gilkroin/tko-dashboard</a>.
+  Raw files: <a href="data/manifest.json">manifest.json</a>. Not investment advice.
+</footer>
+</body>
+</html>

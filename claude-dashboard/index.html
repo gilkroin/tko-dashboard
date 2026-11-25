@@ -1,0 +1,528 @@
+<meta name="dash-one-writer">
+<meta name="dash-form" content="dashboard">
+<style>
+  .tko { display: flex; flex-direction: column; gap: var(--cds-gap-lg); font-family: var(--font-anthropic-sans); color: var(--color-fg); }
+  .tko-title { font-family: var(--font-anthropic-serif); font-weight: 400; font-size: var(--cds-font-size-title); margin: 0 0 var(--cds-gap-xs); }
+  .tko-lede { margin: 0 0 var(--cds-gap-xs); max-width: 75ch; font-size: var(--cds-font-size-body); }
+  .tko-sub, .tko-note { margin: 0; color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); }
+  .tko-num { font-variant-numeric: tabular-nums; }
+  .tko-up { color: var(--color-ok); }
+  .tko-down { color: var(--color-bad); }
+  .tko-card { background: var(--color-panel); border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); padding: var(--cds-pad-lg); min-width: 0; }
+  .tko-card > h2 { font-size: var(--cds-font-size-heading); font-weight: var(--cds-font-weight-medium); margin: 0 0 var(--cds-gap-xs); }
+  .tko-card > .tko-note { margin-bottom: var(--cds-gap-sm); }
+  .tko-grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap: var(--cds-gap-lg); }
+  .tko-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: var(--cds-gap-sm); min-height: 84px; }
+  .tko-tile { border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); padding: var(--cds-pad-md); background: var(--color-bg); min-width: 0; }
+  .tko-tile .tko-tk { font-weight: var(--cds-font-weight-medium); }
+  .tko-tile .tko-nm { color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tko-tile .tko-px { font-family: var(--font-anthropic-serif); font-size: var(--cds-font-size-heading); font-variant-numeric: tabular-nums; margin-top: var(--cds-gap-xs); }
+  .tko-tile .tko-ch { font-size: var(--cds-font-size-caption); font-variant-numeric: tabular-nums; }
+  .tko-toolbar { display: flex; flex-wrap: wrap; gap: var(--cds-gap-xs); align-items: center; margin-bottom: var(--cds-gap-sm); }
+  .tko-chip { border: 1px solid var(--color-border-line); border-radius: 999px; padding: 2px 10px; background: transparent; color: var(--color-fg); font: inherit; font-size: var(--cds-font-size-caption); cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+  .tko-chip[aria-pressed="true"] { background: var(--color-bg); border-color: var(--color-fg-muted); }
+  .tko-chip[aria-pressed="false"].tko-series { opacity: 0.45; }
+  .tko-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+  .tko-chart { position: relative; min-height: 240px; }
+  .tko-chart svg { display: block; width: 100%; overflow: visible; }
+  .tko-chart text { fill: var(--cds-text-secondary); font-size: var(--cds-font-size-caption); font-family: var(--font-anthropic-sans); }
+  .tko-chart .domain, .tko-chart .tick line { stroke: var(--cds-chart-axis); }
+  .tko-chart .tko-gridline { stroke: var(--cds-chart-grid); }
+  .tko-chart .tko-zero { stroke: var(--cds-chart-reference); }
+  .tko-tip { position: absolute; pointer-events: none; background: var(--cds-surface-popover); border: 1px solid var(--cds-border); box-shadow: var(--cds-shadow-popover); border-radius: var(--cds-radius); padding: 6px 8px; font-size: var(--cds-font-size-caption); white-space: nowrap; z-index: 2; }
+  .tko-tip .tko-tip-h { font-weight: var(--cds-font-weight-medium); margin-bottom: 2px; }
+  .tko-input { flex: 1 1 160px; min-width: 0; padding: 4px 8px; border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); background: var(--color-bg); color: var(--color-fg); font: inherit; font-size: var(--cds-font-size-caption); }
+  .tko-news { list-style: none; margin: 0; padding: 0; max-height: 560px; overflow-y: auto; min-height: 120px; }
+  .tko-news li { padding: var(--cds-pad-sm) 0; border-bottom: 1px solid var(--color-border-line); }
+  .tko-news li:last-child { border-bottom: 0; }
+  .tko-news a { color: var(--color-fg); text-decoration: none; font-weight: var(--cds-font-weight-medium); }
+  .tko-news a:hover { text-decoration: underline; }
+  .tko-news .tko-sum { margin: 2px 0 0; color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .tko-meta { color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); }
+  .tko-tag { display: inline-block; font-size: var(--cds-font-size-caption); border: 1px solid var(--color-border-line); border-radius: 4px; padding: 0 5px; margin-right: 6px; font-variant-numeric: tabular-nums; }
+  .tko-tablewrap { overflow-x: auto; }
+  .tko-table { border-collapse: collapse; width: 100%; font-size: var(--cds-font-size-caption); font-variant-numeric: tabular-nums; }
+  .tko-table th, .tko-table td { padding: 6px 8px; border-bottom: 1px solid var(--color-border-line); text-align: right; white-space: nowrap; }
+  .tko-table th { font-weight: var(--cds-font-weight-medium); color: var(--color-fg-muted); }
+  .tko-table th:nth-child(-n+2), .tko-table td:nth-child(-n+2) { text-align: left; }
+  .tko-fresh { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: var(--cds-gap-sm); }
+  .tko-fresh > div { border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); padding: var(--cds-pad-md); background: var(--color-bg); }
+  .tko-fresh .tko-fk { font-weight: var(--cds-font-weight-medium); text-transform: capitalize; }
+  .tko-fail { color: var(--color-bad); font-size: var(--cds-font-size-caption); }
+  .tko-about summary { cursor: pointer; font-weight: var(--cds-font-weight-medium); }
+  .tko-about ol, .tko-about p { color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); max-width: 80ch; }
+  @media print { .tko-news { max-height: none; overflow: visible; } }
+</style>
+
+<div class="tko">
+
+  <header id="header">
+    <h1 class="tko-title">TKO Tech Markets</h1>
+    <p class="tko-lede" data-read lang="en">
+      <b class="tko-num dash-skeleton" data-draw="lede-adv" data-source="breadth" data-field="advancers" data-row="0">—</b> of
+      <span class="tko-num dash-skeleton" data-draw="lede-n" data-source="breadth" data-field="tracked" data-row="0">—</span> tracked tech companies are up against their previous close.
+      The average move is <b class="tko-num dash-skeleton" data-draw="lede-avg" data-source="breadth" data-field="avg_change_pct" data-row="0">—</b>,
+      led by <b class="dash-skeleton" data-draw="lede-best-t" data-source="breadth" data-field="best_ticker" data-row="0">—</b>
+      (<span class="tko-num dash-skeleton" data-draw="lede-best-p" data-source="breadth" data-field="best_pct" data-row="0">—</span>)
+      and held back by <b class="dash-skeleton" data-draw="lede-worst-t" data-source="breadth" data-field="worst_ticker" data-row="0">—</b>
+      (<span class="tko-num dash-skeleton" data-draw="lede-worst-p" data-source="breadth" data-field="worst_pct" data-row="0">—</span>).
+    </p>
+    <p class="tko-sub">
+      Quotes loaded into Snowflake <span class="dash-skeleton" data-draw="fresh-quotes" data-source="pipeline_freshness" data-field="last_loaded_at" data-where="feed=quotes">—</span>.
+      Prices come from Finnhub every 5 minutes during US market hours; this dashboard's copy is refreshed hourly.
+    </p>
+  </header>
+
+  <section class="tko-card" id="tiles">
+    <h2>Latest prices</h2>
+    <p class="tko-note">Last price and change against the previous close, per company.</p>
+    <div class="tko-tiles" data-draw="tiles" data-source="latest_quotes"></div>
+  </section>
+
+  <div class="tko-grid2">
+    <section class="tko-card" id="moves">
+      <h2>Move vs previous close</h2>
+      <p class="tko-note">Percent change, latest quote. Hover a bar for the price.</p>
+      <div class="tko-toolbar" role="group" aria-label="Sort bars">
+        <button type="button" class="tko-chip" data-sort="move" aria-pressed="true">Sort by move</button>
+        <button type="button" class="tko-chip" data-sort="ticker" aria-pressed="false">Sort A–Z</button>
+      </div>
+      <div class="tko-chart" data-draw="moves-chart" data-source="latest_quotes"></div>
+    </section>
+
+    <section class="tko-card" id="history">
+      <h2>Intraday path</h2>
+      <p class="tko-note">Percent change against the previous close, 5-minute points (your local time). Click a company to show or hide it.</p>
+      <div class="tko-toolbar" data-draw="history-chips" role="group" aria-label="Companies shown"></div>
+      <div class="tko-chart" data-draw="history-chart" data-source="price_history"></div>
+    </section>
+  </div>
+
+  <div class="tko-grid2">
+    <section class="tko-card" id="news">
+      <h2>Latest headlines</h2>
+      <p class="tko-note">Company news from the last two days, newest first. <span data-draw="news-count">—</span></p>
+      <div class="tko-toolbar">
+        <select class="dash-select" data-draw="news-ticker" aria-label="Company" data-source="news_feed"></select>
+        <input class="tko-input" type="search" id="news-q" placeholder="Search headlines…" aria-label="Search headlines">
+      </div>
+      <ul class="tko-news" data-draw="news-list" data-source="news_feed"></ul>
+    </section>
+
+    <section class="tko-card" id="volume">
+      <h2>News attention</h2>
+      <p class="tko-note">Articles per company per day (UTC dates). Darker means more coverage.</p>
+      <div class="tko-chart" data-draw="volume-chart" data-source="news_volume"></div>
+    </section>
+  </div>
+
+  <section class="tko-card" id="quotes">
+    <h2>Quote details</h2>
+    <p class="tko-note">Day range and previous close for each company.</p>
+    <div class="tko-tablewrap">
+      <table class="tko-table" data-source="latest_quotes" data-row-key="ticker">
+        <thead>
+          <tr>
+            <th data-field="ticker">Ticker</th>
+            <th data-field="company_name">Company</th>
+            <th data-field="price">Price</th>
+            <th data-field="change_abs">Change</th>
+            <th data-field="change_pct">Change %</th>
+            <th data-field="day_open">Open</th>
+            <th data-field="day_high">High</th>
+            <th data-field="day_low">Low</th>
+            <th data-field="prev_close">Prev. close</th>
+            <th data-field="quote_ts">Quote time</th>
+          </tr>
+        </thead>
+        <tbody data-draw="quotes-rows"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="tko-card" id="pipeline">
+    <h2>Pipeline health</h2>
+    <p class="tko-note">When each feed last landed in Snowflake, and how many rows it holds in total.</p>
+    <div class="tko-fresh" data-draw="pipeline" data-source="pipeline_freshness"></div>
+  </section>
+
+  <details class="tko-about" id="about">
+    <summary>How this dashboard is built</summary>
+    <ol>
+      <li>A GitHub Actions job runs every 5 minutes, Monday to Friday, 13:00–21:59 UTC.</li>
+      <li>It calls the Finnhub API (quotes, company news, profiles) and loads the results into Snowflake TKO_DB.RAW.</li>
+      <li>Views in TKO_DB.MART shape the data for each card on this page.</li>
+      <li>The same job exports those views as JSON to the <code>data</code> branch of github.com/gilkroin/tko-dashboard.</li>
+      <li>A Claude scheduled task uploads the newest JSON files to this dashboard once an hour.</li>
+    </ol>
+    <p>Open Sources to see the file behind every number. Not investment advice.</p>
+  </details>
+</div>
+
+<script>
+  /* ---------- shared helpers and state (on window so every script sees them) ---------- */
+  window.tko = window.tko || { sort: 'move', hidden: new Set(), q: '', ticker: '' };
+  window.tkoFmt = {
+    price: d3.format(',.2f'),
+    pct: (v) => (v > 0 ? '+' : '') + d3.format('.2f')(v) + '%',
+    signed: (v) => (v > 0 ? '+' : '') + d3.format(',.2f')(v),
+    int: d3.format(','),
+    time: d3.timeFormat('%a %d %b, %H:%M'),
+    shortTime: d3.timeFormat('%H:%M'),
+    day: d3.utcFormat('%a %d %b'),
+    iso: (s) => (s ? new Date(s) : null),
+    cls: (v) => (v > 0 ? 'tko-up' : v < 0 ? 'tko-down' : ''),
+  };
+  window.tkoState = function (el, d) {
+    if (d.status === 'loading') { el.classList.add('dash-skeleton'); return 'wait'; }
+    el.classList.remove('dash-skeleton');
+    if (d.status === 'ok') return 'ok';
+    return 'fail';
+  };
+  window.tkoTip = function (box) {
+    const tip = document.createElement('div');
+    tip.className = 'tko-tip';
+    tip.hidden = true;
+    box.appendChild(tip);
+    return {
+      show(event, title, lines) {
+        tip.replaceChildren();
+        const h = document.createElement('div'); h.className = 'tko-tip-h'; h.textContent = title; tip.appendChild(h);
+        for (const l of lines) { const p = document.createElement('div'); p.textContent = l; tip.appendChild(p); }
+        tip.hidden = false;
+        const [x, y] = d3.pointer(event, box);
+        const w = tip.offsetWidth, bw = box.clientWidth;
+        tip.style.left = Math.max(0, Math.min(bw - w, x + 12)) + 'px';
+        tip.style.top = Math.max(0, y - tip.offsetHeight - 8) + 'px';
+      },
+      hide() { tip.hidden = true; },
+    };
+  };
+</script>
+
+<script>
+  /* ---------- calc: market breadth (shown in the headline sentence) ---------- */
+  dash.calc('breadth', {
+    title: 'Market breadth',
+    description: 'How many tracked companies are up, the average move, and the best and worst mover, from the latest quotes.',
+    inputs: ['latest_quotes'],
+    fn: (latest_quotes) => {
+      const rows = latest_quotes.filter((q) => q.change_pct !== null && q.change_pct !== undefined);
+      if (!rows.length) return [];
+      const sorted = rows.slice().sort((a, b) => b.change_pct - a.change_pct);
+      const sum = rows.reduce((s, q) => s + Number(q.change_pct), 0);
+      return [{
+        tracked: rows.length,
+        advancers: rows.filter((q) => q.change_pct > 0).length,
+        avg_change_pct: sum / rows.length,
+        best_ticker: sorted[0].ticker,
+        best_pct: sorted[0].change_pct,
+        worst_ticker: sorted[sorted.length - 1].ticker,
+        worst_pct: sorted[sorted.length - 1].change_pct,
+      }];
+    },
+  });
+
+  /* ---------- headline sentence ---------- */
+  function lede(name, field, fmt, colour) {
+    dash.draw(name, (el) => {
+      const d = dash.data('breadth');
+      const s = tkoState(el, d);
+      if (s !== 'ok' || !d.data || !d.data.length) { el.textContent = '—'; return; }
+      const v = d.data[0][field];
+      el.textContent = fmt ? fmt(v) : String(v);
+      if (colour) el.className = 'tko-num ' + tkoFmt.cls(v);
+    });
+  }
+  lede('lede-adv', 'advancers', tkoFmt.int);
+  lede('lede-n', 'tracked', tkoFmt.int);
+  lede('lede-avg', 'avg_change_pct', tkoFmt.pct, true);
+  lede('lede-best-t', 'best_ticker');
+  lede('lede-best-p', 'best_pct', tkoFmt.pct, true);
+  lede('lede-worst-t', 'worst_ticker');
+  lede('lede-worst-p', 'worst_pct', tkoFmt.pct, true);
+
+  dash.draw('fresh-quotes', (el) => {
+    const d = dash.data('pipeline_freshness');
+    if (tkoState(el, d) !== 'ok') { el.textContent = '—'; return; }
+    const row = d.data.find((r) => r.feed === 'quotes');
+    el.textContent = row && row.last_loaded_at ? tkoFmt.time(tkoFmt.iso(row.last_loaded_at)) : '—';
+  });
+</script>
+
+<script>
+  /* ---------- tiles ---------- */
+  dash.draw('tiles', (el) => {
+    const d = dash.data('latest_quotes');
+    const s = tkoState(el, d);
+    if (s === 'wait') return;
+    if (s === 'fail') { const p = document.createElement('p'); p.className = 'tko-fail'; p.textContent = 'Prices could not be loaded.'; el.replaceChildren(p); return; }
+    const tiles = d.data.map((q) => {
+      const t = document.createElement('div'); t.className = 'tko-tile';
+      const where = 'ticker=' + encodeURIComponent(q.ticker);
+      const tk = document.createElement('div'); tk.className = 'tko-tk'; tk.textContent = q.ticker;
+      const nm = document.createElement('div'); nm.className = 'tko-nm'; nm.textContent = q.company_name || '';
+      const px = document.createElement('div'); px.className = 'tko-px';
+      px.dataset.source = 'latest_quotes'; px.dataset.field = 'price'; px.dataset.where = where;
+      px.textContent = q.price != null ? tkoFmt.price(q.price) : '—';
+      const ch = document.createElement('div'); ch.className = 'tko-ch ' + tkoFmt.cls(q.change_pct);
+      ch.dataset.source = 'latest_quotes'; ch.dataset.field = 'change_pct'; ch.dataset.where = where;
+      ch.textContent = q.change_pct != null ? tkoFmt.pct(q.change_pct) : '—';
+      t.append(tk, nm, px, ch);
+      return t;
+    });
+    el.replaceChildren(...tiles);
+  });
+</script>
+
+<script>
+  /* ---------- moves bar chart (own sort control) ---------- */
+  for (const b of document.querySelectorAll('#moves [data-sort]')) {
+    b.addEventListener('click', () => {
+      tko.sort = b.dataset.sort;
+      for (const o of document.querySelectorAll('#moves [data-sort]')) o.setAttribute('aria-pressed', String(o === b));
+      dash.draw('moves-chart');
+    });
+  }
+
+  dash.draw('moves-chart', (el) => {
+    const d = dash.data('latest_quotes');
+    const s = tkoState(el, d);
+    if (s === 'wait') return;
+    if (s === 'fail' || !d.data.length) { const p = document.createElement('p'); p.className = 'tko-fail'; p.textContent = s === 'fail' ? 'Prices could not be loaded.' : 'No quotes yet.'; el.replaceChildren(p); return; }
+    const rows = d.data.filter((q) => q.change_pct != null).slice()
+      .sort(tko.sort === 'move' ? (a, b) => b.change_pct - a.change_pct : (a, b) => d3.ascending(a.ticker, b.ticker));
+    const W = Math.max(280, el.clientWidth), barH = 26;
+    const M = { t: 8, r: 64, b: 24, l: 56 };
+    const H = M.t + M.b + rows.length * barH;
+    const ext = d3.max(rows, (q) => Math.abs(q.change_pct)) || 1;
+    // keep 60px between the ticker names and the bars, so labels of negative bars never hit the names
+    const x = d3.scaleLinear().domain([-ext, ext]).nice().range([M.l + 60, W - M.r]);
+    const y = d3.scaleBand().domain(rows.map((q) => q.ticker)).range([M.t, H - M.b]).padding(0.25);
+
+    const svg = d3.create('svg').attr('viewBox', [0, 0, W, H]).attr('height', H)
+      .attr('role', 'img').attr('aria-label', 'Bar chart of percent change against previous close for each company');
+    svg.append('g').attr('transform', `translate(0,${H - M.b})`)
+      .call(d3.axisBottom(x).ticks(Math.max(2, Math.floor(W / 90))).tickFormat((v) => v + '%'));
+    svg.append('line').attr('class', 'tko-zero').attr('x1', x(0)).attr('x2', x(0)).attr('y1', M.t).attr('y2', H - M.b);
+    svg.append('g').selectAll('text').data(rows).join('text')
+      .attr('x', M.l - 8).attr('y', (q) => y(q.ticker) + y.bandwidth() / 2).attr('dy', '0.35em').attr('text-anchor', 'end').text((q) => q.ticker);
+    let tip = null; // created after the svg is placed, so it lives inside the chart box
+    svg.append('g').selectAll('rect').data(rows).join('rect')
+      .attr('x', (q) => Math.min(x(0), x(q.change_pct))).attr('width', (q) => Math.abs(x(q.change_pct) - x(0)))
+      .attr('y', (q) => y(q.ticker)).attr('height', y.bandwidth()).attr('rx', 2)
+      .style('fill', (q) => (q.change_pct >= 0 ? 'var(--color-ok)' : 'var(--color-bad)'))
+      .on('mousemove', (e, q) => tip.show(e, `${q.ticker} · ${q.company_name || ''}`, [`Price ${tkoFmt.price(q.price)}`, `Change ${tkoFmt.signed(q.change_abs)} (${tkoFmt.pct(q.change_pct)})`, `Prev. close ${tkoFmt.price(q.prev_close)}`]))
+      .on('mouseleave', () => tip.hide());
+    svg.append('g').selectAll('text').data(rows).join('text')
+      .attr('x', (q) => (q.change_pct >= 0 ? x(q.change_pct) + 4 : x(q.change_pct) - 4))
+      .attr('text-anchor', (q) => (q.change_pct >= 0 ? 'start' : 'end'))
+      .attr('y', (q) => y(q.ticker) + y.bandwidth() / 2).attr('dy', '0.35em').text((q) => tkoFmt.pct(q.change_pct));
+    el.replaceChildren(svg.node());
+    tip = tkoTip(el);
+  });
+</script>
+
+<script>
+  /* ---------- intraday line chart (own company toggles) ---------- */
+  function historyTickers() {
+    const d = dash.data('price_history');
+    return d.status === 'ok' ? Array.from(new Set(d.data.map((r) => r.ticker))).sort() : [];
+  }
+  function colourFor(t, all) { return dash.colors[all.indexOf(t) % dash.colors.length]; }
+
+  dash.draw('history-chips', (el) => {
+    const all = historyTickers();
+    el.replaceChildren(...all.map((t) => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'tko-chip tko-series';
+      b.setAttribute('aria-pressed', String(!tko.hidden.has(t)));
+      const dot = document.createElement('span'); dot.className = 'tko-dot'; dot.style.background = colourFor(t, all);
+      b.append(dot, document.createTextNode(t));
+      b.addEventListener('click', () => {
+        if (tko.hidden.has(t)) tko.hidden.delete(t); else tko.hidden.add(t);
+        b.setAttribute('aria-pressed', String(!tko.hidden.has(t)));
+        dash.draw('history-chart');
+      });
+      return b;
+    }));
+  });
+
+  dash.draw('history-chart', (el) => {
+    const d = dash.data('price_history');
+    const s = tkoState(el, d);
+    if (s === 'wait') return;
+    if (s === 'fail' || !d.data.length) { const p = document.createElement('p'); p.className = 'tko-fail'; p.textContent = s === 'fail' ? 'Price history could not be loaded.' : 'No price history yet.'; el.replaceChildren(p); return; }
+    const all = historyTickers();
+    const rows = d.data.filter((r) => !tko.hidden.has(r.ticker) && r.change_pct != null)
+      .map((r) => ({ ticker: r.ticker, t: tkoFmt.iso(r.bucket_5m_utc), v: Number(r.change_pct), price: r.price }));
+    const series = d3.group(rows, (r) => r.ticker);
+    const W = Math.max(280, el.clientWidth), H = 260;
+    const M = { t: 12, r: 16, b: 28, l: 52 };
+    const x = d3.scaleTime().domain(d3.extent(d.data, (r) => tkoFmt.iso(r.bucket_5m_utc))).range([M.l, W - M.r]);
+    const ext = d3.extent(rows, (r) => r.v);
+    const y = d3.scaleLinear().domain([Math.min(0, ext[0] ?? 0), Math.max(0, ext[1] ?? 0)]).nice().range([H - M.b, M.t]);
+
+    const svg = d3.create('svg').attr('viewBox', [0, 0, W, H]).attr('height', H)
+      .attr('role', 'img').attr('aria-label', 'Line chart of intraday percent change against previous close for each company');
+    svg.append('g').selectAll('line').data(y.ticks(5)).join('line').attr('class', 'tko-gridline')
+      .attr('x1', M.l).attr('x2', W - M.r).attr('y1', y).attr('y2', y);
+    svg.append('line').attr('class', 'tko-zero').attr('x1', M.l).attr('x2', W - M.r).attr('y1', y(0)).attr('y2', y(0));
+    svg.append('g').attr('transform', `translate(0,${H - M.b})`).call(d3.axisBottom(x).ticks(Math.max(2, Math.floor(W / 110))));
+    svg.append('g').attr('transform', `translate(${M.l},0)`).call(d3.axisLeft(y).ticks(5).tickFormat((v) => v + '%'));
+    const line = d3.line().x((r) => x(r.t)).y((r) => y(r.v));
+    for (const [t, pts] of series) {
+      pts.sort((a, b) => a.t - b.t);
+      svg.append('path').datum(pts).attr('d', line).attr('fill', 'none').attr('stroke-width', 2).style('stroke', colourFor(t, all));
+      svg.append('g').selectAll('circle').data(pts).join('circle').attr('cx', (r) => x(r.t)).attr('cy', (r) => y(r.v)).attr('r', 2.5).style('fill', colourFor(t, all));
+    }
+    const hover = svg.append('line').attr('class', 'tko-zero').attr('y1', M.t).attr('y2', H - M.b).attr('opacity', 0);
+    el.replaceChildren(svg.node());
+    const tip = tkoTip(el);
+    const times = Array.from(new Set(rows.map((r) => +r.t))).sort((a, b) => a - b);
+    svg.append('rect').attr('x', M.l).attr('y', M.t).attr('width', W - M.l - M.r).attr('height', H - M.t - M.b).attr('fill', 'transparent')
+      .on('mousemove', (e) => {
+        if (!times.length) return;
+        const mx = x.invert(d3.pointer(e)[0]);
+        const i = d3.bisectCenter(times, +mx), t = times[i];
+        hover.attr('x1', x(t)).attr('x2', x(t)).attr('opacity', 1);
+        const at = rows.filter((r) => +r.t === t).sort((a, b) => b.v - a.v);
+        tip.show(e, tkoFmt.time(new Date(t)), at.map((r) => `${r.ticker}  ${tkoFmt.pct(r.v)}  (${tkoFmt.price(r.price)})`));
+      })
+      .on('mouseleave', () => { hover.attr('opacity', 0); tip.hide(); });
+  });
+</script>
+
+<script>
+  /* ---------- news list (own company filter + search) ---------- */
+  for (const q of document.querySelectorAll('#news-q')) {
+    q.addEventListener('input', () => { tko.q = q.value.trim().toLowerCase(); dash.draw('news-list'); dash.draw('news-count'); });
+  }
+
+  dash.draw('news-ticker', (sel) => {
+    const d = dash.data('news_feed');
+    const tickers = d.status === 'ok' ? Array.from(new Set(d.data.map((r) => r.ticker))).sort() : [];
+    sel.replaceChildren(new Option('All companies', ''), ...tickers.map((t) => new Option(t, t)));
+    sel.value = tko.ticker;
+    sel.onchange = () => { tko.ticker = sel.value; dash.draw('news-list'); dash.draw('news-count'); };
+  });
+
+  function newsRows() {
+    const d = dash.data('news_feed');
+    if (d.status !== 'ok') return null;
+    return d.data.filter((r) => (!tko.ticker || r.ticker === tko.ticker) &&
+      (!tko.q || (r.headline || '').toLowerCase().includes(tko.q) || (r.summary || '').toLowerCase().includes(tko.q)));
+  }
+
+  dash.draw('news-count', (el) => {
+    const rows = newsRows();
+    el.textContent = rows ? `${tkoFmt.int(Math.min(rows.length, 60))} of ${tkoFmt.int(rows.length)} shown.` : '';
+  });
+
+  dash.draw('news-list', (el) => {
+    const d = dash.data('news_feed');
+    const s = tkoState(el, d);
+    if (s === 'wait') return;
+    if (s === 'fail') { const li = document.createElement('li'); li.className = 'tko-fail'; li.textContent = 'Headlines could not be loaded.'; el.replaceChildren(li); return; }
+    const rows = newsRows().slice(0, 60);
+    if (!rows.length) { const li = document.createElement('li'); li.className = 'tko-meta'; li.textContent = 'No headlines match.'; el.replaceChildren(li); return; }
+    el.replaceChildren(...rows.map((r) => {
+      const li = document.createElement('li');
+      const tag = document.createElement('span'); tag.className = 'tko-tag'; tag.textContent = r.ticker;
+      let head;
+      if (r.url && /^https?:\/\//.test(r.url)) {
+        head = document.createElement('a'); head.href = r.url; head.target = '_blank'; head.rel = 'noopener noreferrer';
+      } else { head = document.createElement('span'); }
+      head.textContent = r.headline || '(no headline)';
+      head.dataset.source = 'news_feed'; head.dataset.field = 'headline';
+      head.dataset.where = 'news_id=' + encodeURIComponent(r.news_id) + '&ticker=' + encodeURIComponent(r.ticker);
+      const meta = document.createElement('div'); meta.className = 'tko-meta';
+      const when = tkoFmt.iso(r.published_at);
+      meta.textContent = [r.publisher, when ? tkoFmt.time(when) : null].filter(Boolean).join(' · ');
+      const sum = document.createElement('p'); sum.className = 'tko-sum'; sum.textContent = r.summary || '';
+      li.append(tag, head, meta);
+      if (r.summary) li.append(sum);
+      return li;
+    }));
+  });
+</script>
+
+<script>
+  /* ---------- news volume heatmap ---------- */
+  dash.draw('volume-chart', (el) => {
+    const d = dash.data('news_volume');
+    const s = tkoState(el, d);
+    if (s === 'wait') return;
+    if (s === 'fail' || !d.data.length) { const p = document.createElement('p'); p.className = 'tko-fail'; p.textContent = s === 'fail' ? 'News counts could not be loaded.' : 'No news counts yet.'; el.replaceChildren(p); return; }
+    const parse = d3.utcParse('%Y-%m-%d');
+    const days = Array.from(new Set(d.data.map((r) => r.news_date))).sort();
+    const tickers = Array.from(new Set(d.data.map((r) => r.ticker))).sort();
+    const W = Math.max(280, el.clientWidth);
+    const M = { t: 24, r: 8, b: 8, l: 56 };
+    const cellH = 30, H = M.t + M.b + tickers.length * cellH;
+    const x = d3.scaleBand().domain(days).range([M.l, W - M.r]).padding(0.08);
+    const y = d3.scaleBand().domain(tickers).range([M.t, H - M.b]).padding(0.08);
+    const max = d3.max(d.data, (r) => Number(r.articles)) || 1;
+    const op = d3.scaleLinear().domain([0, max]).range([0.08, 1]);
+    const svg = d3.create('svg').attr('viewBox', [0, 0, W, H]).attr('height', H)
+      .attr('role', 'img').attr('aria-label', 'Heatmap of news articles per company per day');
+    svg.append('g').selectAll('text').data(days).join('text')
+      .attr('x', (k) => x(k) + x.bandwidth() / 2).attr('y', M.t - 8).attr('text-anchor', 'middle')
+      .text((k) => (x.bandwidth() > 70 ? tkoFmt.day(parse(k)) : d3.utcFormat('%d %b')(parse(k))));
+    svg.append('g').selectAll('text').data(tickers).join('text')
+      .attr('x', M.l - 8).attr('y', (t) => y(t) + y.bandwidth() / 2).attr('dy', '0.35em').attr('text-anchor', 'end').text((t) => t);
+    el.replaceChildren(svg.node());
+    const tip = tkoTip(el);
+    const cells = svg.append('g').selectAll('g').data(d.data).join('g');
+    cells.append('rect').attr('x', (r) => x(r.news_date)).attr('y', (r) => y(r.ticker)).attr('width', x.bandwidth()).attr('height', y.bandwidth()).attr('rx', 3)
+      .style('fill', dash.colors[0]).attr('fill-opacity', (r) => op(Number(r.articles)))
+      .on('mousemove', (e, r) => tip.show(e, `${r.ticker} · ${tkoFmt.day(parse(r.news_date))}`, [`${tkoFmt.int(r.articles)} articles`]))
+      .on('mouseleave', () => tip.hide());
+    cells.append('text').attr('x', (r) => x(r.news_date) + x.bandwidth() / 2).attr('y', (r) => y(r.ticker) + y.bandwidth() / 2)
+      .attr('dy', '0.35em').attr('text-anchor', 'middle').attr('pointer-events', 'none')
+      .style('fill', (r) => (op(Number(r.articles)) > 0.55 ? 'var(--color-bg)' : 'var(--color-fg)'))
+      .text((r) => tkoFmt.int(r.articles));
+  });
+</script>
+
+<script>
+  /* ---------- quote table ---------- */
+  dash.draw('quotes-rows', (tb) => {
+    const d = dash.data('latest_quotes');
+    if (d.status === 'loading') return;
+    if (d.status !== 'ok') { const tr = document.createElement('tr'); const td = document.createElement('td'); td.colSpan = 10; td.className = 'tko-fail'; td.textContent = 'Quotes could not be loaded.'; tr.append(td); tb.replaceChildren(tr); return; }
+    tb.replaceChildren(...d.data.map((q) => {
+      const tr = document.createElement('tr');
+      const cell = (v, cls) => { const td = document.createElement('td'); td.textContent = v; if (cls) td.className = cls; return td; };
+      tr.append(
+        cell(q.ticker), cell(q.company_name || ''),
+        cell(tkoFmt.price(q.price)), cell(tkoFmt.signed(q.change_abs), tkoFmt.cls(q.change_abs)), cell(tkoFmt.pct(q.change_pct), tkoFmt.cls(q.change_pct)),
+        cell(tkoFmt.price(q.day_open)), cell(tkoFmt.price(q.day_high)), cell(tkoFmt.price(q.day_low)), cell(tkoFmt.price(q.prev_close)),
+        cell(q.quote_ts ? tkoFmt.time(tkoFmt.iso(q.quote_ts)) : '—'));
+      return tr;
+    }));
+  });
+
+  /* ---------- pipeline health ---------- */
+  dash.draw('pipeline', (el) => {
+    const d = dash.data('pipeline_freshness');
+    const s = tkoState(el, d);
+    if (s === 'wait') return;
+    if (s === 'fail') { const p = document.createElement('p'); p.className = 'tko-fail'; p.textContent = 'Pipeline status could not be loaded.'; el.replaceChildren(p); return; }
+    el.replaceChildren(...d.data.map((r) => {
+      const box = document.createElement('div');
+      const where = 'feed=' + encodeURIComponent(r.feed);
+      const k = document.createElement('div'); k.className = 'tko-fk'; k.textContent = r.feed;
+      const at = document.createElement('div'); at.className = 'tko-meta';
+      at.dataset.source = 'pipeline_freshness'; at.dataset.field = 'last_loaded_at'; at.dataset.where = where;
+      at.textContent = r.last_loaded_at ? 'Last load ' + tkoFmt.time(tkoFmt.iso(r.last_loaded_at)) : 'Never loaded';
+      const n = document.createElement('div'); n.className = 'tko-num';
+      n.dataset.source = 'pipeline_freshness'; n.dataset.field = 'rows_total'; n.dataset.where = where;
+      n.textContent = tkoFmt.int(r.rows_total);
+      const lbl = document.createElement('span'); lbl.className = 'tko-meta'; lbl.textContent = ' rows';
+      const nWrap = document.createElement('div'); nWrap.append(n, lbl);
+      box.append(k, at, nWrap);
+      return box;
+    }));
+  });
+</script>

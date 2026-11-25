@@ -1,0 +1,56 @@
+# Publishes the customer webpage to GitHub Pages: a static snapshot, no auto-refresh.
+#
+# When:
+#   * automatically Mon-Fri at 22:10 UTC, after the last 5-minute load of the day
+#   * manually: Actions tab -> publish-site -> Run workflow   (or: gh workflow run publish-site)
+#
+# One-time setup: repo Settings -> Pages -> Build and deployment -> Source = "GitHub Actions".
+
+name: publish-site
+
+on:
+  schedule:
+    - cron: "10 22 * * 1-5"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read     # read the repo and the `data` branch
+  pages: write       # publish to GitHub Pages
+  id-token: write    # prove to Pages that this run is from this repo
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5            # main: page code + build script
+
+      - uses: actions/checkout@v5            # the latest snapshot
+        with:
+          ref: data
+          path: _data
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - run: python publish/build_site.py --data _data --out site/dist
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: site/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
